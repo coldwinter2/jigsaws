@@ -1,0 +1,157 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Picture demo</title>
+<body>
+<script src="js/pixi.min.js"></script>
+<script src="js/hammer.min.js"></script>
+<button id="btn_change">变更操作</button>
+<br />
+<script>
+//Create a Pixi Application
+let Text = PIXI.Text,
+    TextStyle = PIXI.TextStyle;
+
+let app = new PIXI.Application({ 
+    width: 640, 
+    height: 640,                       
+    antialiasing: true, 
+    transparent: false, 
+    resolution: 1
+  }
+);
+
+document.body.appendChild(app.view);
+
+PIXI.loader
+  .add("img/icon.jpeg")
+  .load(setup);
+
+function setup() {
+
+    let cat = new PIXI.Sprite(PIXI.loader.resources["img/icon.jpeg"].texture);
+    cat.anchor.set(0.5,0.5);
+    cat.interactive = true;
+    cat.scale.set(0.2,0.2);
+    app.stage.addChild(cat);
+
+    let message = new Text("缩放",new TextStyle({
+  fontFamily: "Arial",
+  fontSize: 36,
+  fill: "white",
+  stroke: '#ff3300',
+  strokeThickness: 4,
+  dropShadow: true,
+  dropShadowColor: "#000000",
+  dropShadowBlur: 4,
+  dropShadowAngle: Math.PI / 6,
+  dropShadowDistance: 6,
+}));
+    app.stage.addChild(message);
+
+    var mc = new Hammer.Manager(app.view, 
+    {
+            recognizers: [
+                [Hammer.Rotate, {
+                    enable: false
+                }],
+                [Hammer.Pinch, {
+                    enable: true
+                }],
+                [Hammer.Pan,{direction: Hammer.DIRECTION_ALL}]
+            ]
+    });
+
+    var pos = null;
+    var rotation_cache = null;
+    var rotation = 0;
+    var scale = null;
+    var scale_cache = null;
+    // 平移
+    mc.on("panstart panmove panend pancancel", function(e){
+        switch(e.type)
+        {
+            case 'panstart':
+                pos = {x:cat.position.x,y:cat.position.y}
+                cat.position.set(pos.x + e.deltaX,pos.y + e.deltaY)
+                break;
+            case 'panmove':
+                cat.position.set(pos.x + e.deltaX,pos.y + e.deltaY); 
+                break;
+            case 'panend':
+                cat.position.set(pos.x + e.deltaX,pos.y + e.deltaY);
+                pos = null;
+                break;
+            case 'pancancel':
+                cat.position.set(pos.x,pos.y);
+                pos = null;
+                break;
+        }
+    });
+    // 旋转
+    mc.on("rotatestart rotatemove rotateend rotatecancel", function(e){
+        
+        switch(e.type)
+        {
+            case 'rotatestart':
+                rotation = -e.rotation/180*3.1415926;
+                rotation_cache = cat.rotation;
+                break;
+            case 'rotatemove':
+                cat.rotation = rotation_cache + e.rotation/180*3.1415926 + rotation;
+                break;
+            case 'rotateend':
+                cat.rotation = rotation_cache + e.rotation/180*3.1415926 + rotation;
+                rotation_cache = null;
+                break;
+            case 'rotatecancel':
+                cat.rotation = rotation_cache
+                rotation_cache = null;
+                break;
+            
+        }
+    });
+
+    // 缩放
+    mc.on('pinchstart pinchmove pinchend pinchcancel',function(e){
+        // message.setText(e.scale)
+        switch(e.type)
+        {
+            case 'pinchstart':
+                scale = e.scale;
+                scale_cache = cat.scale.x
+                break;
+            case 'pinchmove':
+                cat.scale.set(e.scale * scale_cache,e.scale*scale_cache);
+                break;
+            case 'pinchend':
+                cat.scale.set(e.scale*scale_cache,e.scale*scale_cache);
+                break;
+            case 'pinchcancel':
+                break;
+        }
+    })
+
+    btn_change.onclick = function(){
+        if(message.text == '缩放'){
+            message.setText('旋转');
+            mc.get('rotate').set({enable:true});
+            mc.get('pinch').set({enable:false});
+
+        }else if(message.text == '旋转'){
+            message.setText('缩放');
+            mc.get('rotate').set({enable:false});
+            mc.get('pinch').set({enable:true});
+        }
+    }
+
+    // btn_save.onclick = function(){
+    //     var renderTexture = new PIXI.RenderTexture(app.renderer, 640,640);
+    //     renderTexture.render(app.stage);
+    //     var canvas = renderTexture.getCanvas();
+    //     window.open(canvas.toDataURL('image/png'));
+    // }
+}
+
+</script>
+</body>
+</html>
